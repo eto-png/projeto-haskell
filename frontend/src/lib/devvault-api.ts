@@ -1,15 +1,19 @@
 import { queryOptions } from "@tanstack/react-query";
 import { EXAMPLES, type Snippet, type VaultSession } from "./vault";
+
 const CONFIG_KEY = "devvault.api";
 const SESSION_KEY = "devvault.session";
 const DEMO_KEY = "devvault.examples";
+const DEFAULT_API_URL = "https://codespaces-4a511b-8080.app.github.dev";
+
 export function apiUrl() {
   return (
-    localStorage.getItem(CONFIG_KEY) ??
-    (import.meta.env["VITE_API_URL"] as string | undefined) ??
-    ""
+    localStorage.getItem(CONFIG_KEY) ||
+    (import.meta.env["VITE_API_URL"] as string | undefined) ||
+    DEFAULT_API_URL
   );
 }
+
 export function normalizeApiUrl(value: string) {
   if (!value.trim()) return "";
   const url = new URL(value.trim());
@@ -23,11 +27,13 @@ export function normalizeApiUrl(value: string) {
     throw new Error("Informe uma URL HTTP ou HTTPS válida, sem credenciais ou parâmetros.");
   return url.toString().replace(/\/$/, "");
 }
+
 export function configureApi(value: string) {
   const url = normalizeApiUrl(value);
   localStorage.setItem(CONFIG_KEY, url);
   signOut();
 }
+
 export function readSession(): VaultSession | null {
   try {
     const saved = JSON.parse(localStorage.getItem(SESSION_KEY) ?? "null");
@@ -36,13 +42,16 @@ export function readSession(): VaultSession | null {
     return null;
   }
 }
+
 function saveSession(session: VaultSession) {
   localStorage.setItem(SESSION_KEY, JSON.stringify({ base: apiUrl(), session }));
   return session;
 }
+
 export function signOut() {
   localStorage.removeItem(SESSION_KEY);
 }
+
 export function enterDemo() {
   return saveSession({
     token: "local-demo",
@@ -50,6 +59,7 @@ export function enterDemo() {
     demo: true,
   });
 }
+
 async function request<T>(path: string, init: RequestInit = {}, authenticated = true): Promise<T> {
   const base = apiUrl();
   if (!base) throw new Error("Configure a URL da API para entrar ou criar sua conta.");
@@ -88,6 +98,7 @@ async function request<T>(path: string, init: RequestInit = {}, authenticated = 
     throw error;
   }
 }
+
 export async function authenticate(
   mode: "login" | "register",
   data: { email: string; senha: string; nome?: string },
@@ -101,6 +112,7 @@ export async function authenticate(
     throw new Error("A API retornou uma resposta de autenticação inválida.");
   return saveSession(session);
 }
+
 function demoSnippets(): Snippet[] {
   try {
     return JSON.parse(localStorage.getItem(DEMO_KEY) ?? "null") ?? EXAMPLES;
@@ -108,9 +120,11 @@ function demoSnippets(): Snippet[] {
     return EXAMPLES;
   }
 }
+
 export async function listSnippets(): Promise<Snippet[]> {
   return readSession()?.demo ? demoSnippets() : request<Snippet[]>("/snippets");
 }
+
 export async function createSnippet(data: Omit<Snippet, "id">): Promise<Snippet> {
   if (!readSession()?.demo)
     return request<Snippet>("/snippets", { method: "POST", body: JSON.stringify(data) });
@@ -119,6 +133,7 @@ export async function createSnippet(data: Omit<Snippet, "id">): Promise<Snippet>
   localStorage.setItem(DEMO_KEY, JSON.stringify([snippet, ...rows]));
   return snippet;
 }
+
 export async function deleteSnippet(id: number) {
   if (!readSession()?.demo) {
     await request(`/snippets/${id}`, { method: "DELETE" });
@@ -126,6 +141,7 @@ export async function deleteSnippet(id: number) {
   }
   localStorage.setItem(DEMO_KEY, JSON.stringify(demoSnippets().filter((s) => s.id !== id)));
 }
+
 export const snippetsQuery = () =>
   queryOptions({
     queryKey: ["devvault", apiUrl(), readSession()?.usuario.id, readSession()?.demo ?? false],
