@@ -169,7 +169,7 @@ type API =
   :<|> "login" :> ReqBody '[JSON] LoginReq :> Post '[JSON] AuthResp
   :<|> "snippets" :> Header "Authorization" Text :> Get '[JSON] [Snippet]
   :<|> "snippets" :> Header "Authorization" Text :> ReqBody '[JSON] CreateSnippetReq :> Post '[JSON] Snippet
-  :<|> "snippets" :> Header "Authorization" Text :> Capture "id" Int :> Delete '[JSON] NoContent
+  :<|> "snippets" :> Header "Authorization" Text :> Capture "id" Int :> Delete '[JSON] Text
 
 -- ==========================
 -- Autenticação Auxiliar
@@ -253,7 +253,7 @@ createSnippetHandler dbVar mAuth req = do
     Left err -> throwError err
     Right snip -> pure snip
 
-deleteSnippetHandler :: MVar Database -> Maybe Text -> Int -> Handler NoContent
+deleteSnippetHandler :: MVar Database -> Maybe Text -> Int -> Handler Text
 deleteSnippetHandler dbVar mAuth targetId = do
   res <- liftIO $ modifyMVar dbVar $ \db ->
     case extractUser mAuth db of
@@ -262,7 +262,7 @@ deleteSnippetHandler dbVar mAuth targetId = do
         let filtrados = filter (\s -> not (sId s == targetId && sUserId s == uId u)) (dbSnippets db)
         let newDb = db { dbSnippets = filtrados }
         saveDB newDb
-        pure (newDb, Right NoContent)
+        pure (newDb, Right "Snippet excluido")
   case res of
     Left err -> throwError err
     Right ok -> pure ok

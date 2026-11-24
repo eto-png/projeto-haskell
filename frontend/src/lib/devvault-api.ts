@@ -4,7 +4,7 @@ import { EXAMPLES, type Snippet, type VaultSession } from "./vault";
 const CONFIG_KEY = "devvault.api";
 const SESSION_KEY = "devvault.session";
 const DEMO_KEY = "devvault.examples";
-const DEFAULT_API_URL = "https://codespaces-4a511b-8080.app.github.dev";
+const DEFAULT_API_URL = "https://refactored-orbit-wrwwv76g56rf9gjw-8080.app.github.dev";
 
 export function apiUrl() {
   return (
